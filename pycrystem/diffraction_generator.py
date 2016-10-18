@@ -82,11 +82,10 @@ class ElectronDiffractionCalculator(object):
             The data associated with this structure and diffraction setup.
 
         """
-        wavelength = self.wavelength
-        latt = structure.lattice
 
         # Obtain crystallographic reciprocal lattice points within `max_r`.
-        reciprocal_lattice = latt.reciprocal_lattice_crystallographic
+        reciprocal_lattice = \
+            structure.lattice.reciprocal_lattice_crystallographic
         fractional_coordinates = \
             reciprocal_lattice.get_points_in_sphere([[0, 0, 0]], [0, 0, 0],
                                                     self.reciprocal_radius,
@@ -94,14 +93,7 @@ class ElectronDiffractionCalculator(object):
         cartesian_coordinates = reciprocal_lattice.get_cartesian_coords(
             fractional_coordinates)
 
-        # Identify points intersecting the Ewald sphere within maximum
-        # excitation error and the magnitude of their excitation error.
-        radius = 1/wavelength
-        r = np.sqrt(np.sum(np.square(cartesian_coordinates[:, :2]), axis=1))
-        theta = np.arcsin(r/radius)
-        z_sphere = radius * (1 - np.cos(theta))
-        proximity = np.absolute(z_sphere - cartesian_coordinates[:, 2])
-        intersection = proximity < self.excitation_error
+        intersection, proximity = self.ewald_intersection(cartesian_coordinates)
 
         intersection_coordinates = cartesian_coordinates[intersection]
         intersection_indices = fractional_coordinates[intersection]
@@ -118,6 +110,37 @@ class ElectronDiffractionCalculator(object):
             indices=intersection_indices,
             intensities=intersection_intensities
         )
+
+    def ewald_intersection(self, coordinates):
+        """Coordinates intersecting the Ewald sphere.
+
+        Calculates which coordinates in `coordinates` intersect the Ewald
+        sphere within the limits set by the excitation error.
+
+        Parameters
+        ----------
+        coordinates : ndarray
+            (n_coordinates, 3)
+            Each row should contain the (x, y, z) cartesian coordinates in
+            reciprocal space.
+
+        Returns
+        -------
+        intersection : ndarray
+            A one-dimensional boolean array of length `n_coordinates`. True
+            when the coordinates intersect the sphere, and False otherwise.
+        proximity : ndarray
+            The distance, along the z-axis, from each coordinate to the Ewald
+            sphere.
+
+        """
+        radius = 1 / self.wavelength  # Ewald sphere radius
+        r = np.sqrt(np.sum(np.square(coordinates[:, :2]), axis=1))
+        theta = np.arcsin(r / radius)
+        z_sphere = radius * (1 - np.cos(theta))
+        proximity = np.absolute(z_sphere - coordinates[:, 2])
+        intersection = proximity < self.excitation_error
+        return intersection, proximity
 
     @staticmethod
     def get_peak_intensities(structure, indices, proximities):
@@ -201,6 +224,24 @@ class DiffractionSimulation:
         else:
             raise ValueError("`scale` must be a float, int, or length-2 tuple"
                              "of floats or ints.")
+
+    def to_pixels(self, image_shape):
+        """Converts the pattern's coordinates to pixel indices.
+
+        Parameters
+        ----------
+        image_shape : tuple of int
+            The shape of the image, in pixels.
+
+        Returns
+        -------
+        x, y : ndarray
+            The pixel coordinates of the converted calibrated coordinates.
+
+        """
+        x = (self.calibrated_coordinates[:, 0] + image_shape[0] / 2).astype(int)
+        y = (self.calibrated_coordinates[:, 1] + image_shape[1] / 2).astype(int)
+        return x, y
 
     def plot(self):
         """Returns the diffraction data as a plot.

@@ -26,7 +26,7 @@ from pymatgen.transformations.standard_transformations \
 from transforms3d.euler import euler2axangle, axangle2euler
 from tqdm import tqdm
 
-from .utils import correlate
+from pycrystem.utils.correlation import correlate
 
 
 class DiffractionLibraryGenerator(object):

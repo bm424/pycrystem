@@ -74,13 +74,18 @@ def get_interaction_constant(accelerating_voltage):
 
 
 def get_structure_factors(fractional_coordinates, structure):
-    """Get structure factors
+    """Get structure factors.
+
+    In this very simple model, the atomic scattering factor is equal to the
+    atomic number.
 
     Patterns
     --------
-    fractional_coordinates :
-
-    structure
+    fractional_coordinates : ndarray
+        (n_coordinates, 3)
+        Miller indices of reciprocal lattice points.
+    structure : :class:`pymatgen.core.structure.Structure`
+        A pymatgen structure.
 
     Returns
     -------

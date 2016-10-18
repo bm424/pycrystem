@@ -368,6 +368,26 @@ class ElectronDiffraction(Signal2D):
 
         return radial_profile
 
+    def get_point_intensities(self, x, y):
+        """Returns the intensity of the diffraction signal at *pixel* positions.
+
+        .. todo::
+            Implement this as x, y positions in the signal dimensions.
+
+        Parameters
+        ----------
+        x, y : ndarray
+            The (x, y) coordinates of the pixels to find the intensities of.
+
+        Returns
+        -------
+        intensities : ndarray
+            A list of the intensities at the specified positions.
+
+        """
+
+        return self.data[x, y]
+
     def remove_background(self, h):
         """Perform background subtraction.
 
