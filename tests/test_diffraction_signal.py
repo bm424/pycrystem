@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with  HyperSpy.  If not, see <http://www.gnu.org/licenses/>.
 
-
+from unittest import TestCase
 import numpy as np
 import nose.tools as nt
 
@@ -24,24 +24,24 @@ from hyperspy.signals import Signal1D, Signal2D
 from hyperspy.defaults_parser import preferences
 
 
-class Test_metadata:
+class TestMetadata(TestCase):
 
     def setUp(self):
         # Create an empty diffraction pattern
         dp = ElectronDiffraction(np.ones((2, 2, 2, 2)))
         dp.axes_manager.signal_axes[0].scale = 1e-3
-        dp.metadata.Acquisition_instrument.TEM.accelerating_voltage = 200
+        dp.metadata.set_item('Acquisition_instrument.TEM.accelerating_voltage'
+                             '', 200)
         dp.metadata.Acquisition_instrument.TEM.convergence_angle = 15.0
         dp.metadata.Acquisition_instrument.TEM.rocking_angle = 18.0
         dp.metadata.Acquisition_instrument.TEM.rocking_frequency = 63
-        dp.metadata.Acquisition_instrument.TEM.Detector.Diffraction.exposure_time = 35
+        dp.metadata.Acquisition_instrument.TEM.set_item('Detector.Diffraction.exposure_time', 35)
         self.signal = dp
 
     def test_default_param(self):
-        dp = self.signal
-        md = dp.metadata
-        nt.assert_equal(md.Acquisition_instrument.TEM.rocking_angle,
+        nt.assert_equal(self.signal.metadata.Acquisition_instrument.TEM.rocking_angle,
                         preferences.ElectronDiffraction.ed_precession_angle)
+
 
 class Test_direct_beam_methods:
 

@@ -142,8 +142,7 @@ class ElectronDiffractionCalculator(object):
         intersection = proximity < self.excitation_error
         return intersection, proximity
 
-    @staticmethod
-    def get_peak_intensities(structure, indices, proximities):
+    def get_peak_intensities(self, structure, indices, proximities):
         """Calculates peak intensities.
 
         The peak intensity is a combination of the structure factor for a given
@@ -167,7 +166,7 @@ class ElectronDiffractionCalculator(object):
 
         """
         structure_factors = get_structure_factors(indices, structure)
-        peak_relative_proximity = 1 - proximities / np.max(proximities)
+        peak_relative_proximity = 1 - proximities / self.excitation_error
         peak_intensities = np.sqrt(structure_factors * peak_relative_proximity)
         return peak_intensities
 
