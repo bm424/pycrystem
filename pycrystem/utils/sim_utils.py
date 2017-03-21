@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with PyCrystEM.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import division
+import pkg_resources
 
 import itertools
 import math
@@ -24,10 +25,12 @@ from math import radians, sin
 
 import numpy as np
 from scipy.constants import h, m_e, e, c, pi
-import os
 import json
 
-with open("pycrystem/utils/atomic_scattering_params.json") as f:
+ASP_FILE = pkg_resources.resource_filename('pycrystem',
+                                           'data/atomic_scattering_params.json')
+
+with open(ASP_FILE) as f:
     ATOMIC_SCATTERING_PARAMS = json.load(f)
 
 

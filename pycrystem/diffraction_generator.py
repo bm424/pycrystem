@@ -24,13 +24,11 @@ from __future__ import division
 
 import numpy as np
 from hyperspy.components2d import Gaussian2D
-from pymatgen.util.plotting_utils import get_publication_quality_plot
 
 from pycrystem.diffraction_signal import ElectronDiffraction
 from pycrystem.utils.sim_utils import get_electron_wavelength,\
     get_kinematical_intensities
 from pymatgen.util.plotting_utils import get_publication_quality_plot
-
 
 
 class ElectronDiffractionCalculator(object):
@@ -48,21 +46,20 @@ class ElectronDiffractionCalculator(object):
            .. math::
                 I_{hkl} = F_{hkl}F_{hkl}^*
 
-    .. todo::
-        Include camera length, when implemented.
-    .. todo::
-        Refactor the excitation error to a structure property.
-
     Parameters
     ----------
     accelerating_voltage : float
         The accelerating voltage of the microscope in kV
-    reciprocal_radius : float
-        The maximum radius of the sphere of reciprocal space to sample, in
-        reciprocal angstroms.
     max_excitation_error : float
         The maximum extent of the relrods in reciprocal angstroms. Typically
         equal to 1/{specimen thickness}.
+
+
+    .. todo::
+        Include camera length, when implemented.
+
+    .. todo::
+        Refactor the excitation error to a structure property.
 
     """
 
@@ -70,10 +67,6 @@ class ElectronDiffractionCalculator(object):
                  accelerating_voltage,
                  max_excitation_error,
                  debye_waller_factors=None):
-        """
-        Initializes the electron diffraction calculator with a particular
-        accelerating voltage, reciprocal radius and excitation error.
-        """
         self.wavelength = get_electron_wavelength(accelerating_voltage)
         self.max_excitation_error = max_excitation_error
         self.debye_waller_factors = debye_waller_factors or {}
@@ -88,10 +81,13 @@ class ElectronDiffractionCalculator(object):
         structure : Structure
             The structure for which to derive the diffraction pattern. Note that
             the structure must be rotated to the appropriate orientation.
+        reciprocal_radius : float
+            The radius of reciprocal space from which to sample the reciprocal
+            lattice, in Angstroms.
 
         Returns
         -------
-        DiffractionSimulation
+        :class:`DiffractionSimulation`
             The data associated with this structure and diffraction setup.
 
         """
@@ -99,34 +95,13 @@ class ElectronDiffractionCalculator(object):
         wavelength = self.wavelength
         max_excitation_error = self.max_excitation_error
         debye_waller_factors = self.debye_waller_factors
-        latt = structure.lattice
+        lattice = structure.lattice
 
-        # Obtain crystallographic reciprocal lattice points within `max_r` and
-        # g-vector magnitudes for intensity calculations.
-        recip_latt = latt.reciprocal_lattice_crystallographic
-        recip_pts = recip_latt.get_points_in_sphere([[0, 0, 0]],
-                                                    [0, 0, 0],
-                                                    reciprocal_radius,
-                                                    zip_results=False)[0]
-        g_hkls = recip_latt.get_points_in_sphere([[0, 0, 0]],
-                                                 [0, 0, 0],
-                                                 reciprocal_radius,
-                                                 zip_results=False)[1]
-        cartesian_coordinates = recip_latt.get_cartesian_coords(recip_pts)
+        lattice_sampled = \
+            self.sample_reciprocal_lattice(lattice, reciprocal_radius)
 
-        # Identify points intersecting the Ewald sphere within maximum
-        # excitation error and store the magnitude of their excitation error.
-        radius = 1 / wavelength
-        r = np.sqrt(np.sum(np.square(cartesian_coordinates[:, :2]), axis=1))
-        theta = np.arcsin(r / radius)
-        z_sphere = radius * (1 - np.cos(theta))
-        proximity = np.absolute(z_sphere - cartesian_coordinates[:, 2])
-        intersection = proximity < max_excitation_error
-        # Mask parameters corresponding to excited reflections.
-        intersection_coordinates = cartesian_coordinates[intersection]
-        intersection_indices = recip_pts[intersection]
-        proximity = proximity[intersection]
-        g_hkls = g_hkls[intersection]
+        g_hkls, intersection_coordinates, intersection_indices, proximity = \
+            self.ewald_sphere_intersection(*lattice_sampled)
 
         # Calculate diffracted intensities based on a kinematical model.
         intensities = get_kinematical_intensities(structure,
@@ -145,6 +120,84 @@ class ElectronDiffractionCalculator(object):
         return DiffractionSimulation(coordinates=intersection_coordinates,
                                      indices=intersection_indices,
                                      intensities=intensities)
+
+    def ewald_sphere_intersection(self, reciprocal_points, g_hkls,
+                                  cartesian_coordinates):
+        """Determine lattice points intersecting the Ewald sphere.
+
+        Parameters
+        ----------
+        reciprocal_points : :class:`numpy.ndarray`
+            The miller indices of the sampled reciprocal space points.
+        g_hkls : :class:`numpy.ndarray`
+            ???
+        cartesian_coordinates : :class:`numpy.ndarray`
+            The reciprocal space coordinates of the sampled points.
+
+        Returns
+        -------
+        g_hkls : :class:`numpy.ndarray`
+            ???
+        intersection_coordinates : :class:`numpy.ndarray`
+            The reciprocal space coordinates of the points that intersect the
+            Ewald sphere.
+        intersection_indices : :class:`numpy.ndarray`
+            The Miller indices of the points that intersect the Ewald sphere.
+        proximity : :class:`numpy.ndarray`
+            The vertical (z) distances between points that intersect the Ewald
+            sphere and the sphere itself.
+
+        """
+        # Identify points intersecting the Ewald sphere within maximum
+        # excitation error and store the magnitude of their excitation error.
+        radius = 1. / self.wavelength
+        r = np.sqrt(np.sum(np.square(cartesian_coordinates[:, :2]), axis=1))
+        theta = np.arcsin(r / radius)
+        z_sphere = radius * (1 - np.cos(theta))
+        proximity = np.absolute(z_sphere - cartesian_coordinates[:, 2])
+        intersection = proximity < self.max_excitation_error
+        # Mask parameters corresponding to excited reflections.
+        intersection_coordinates = cartesian_coordinates[intersection]
+        intersection_indices = reciprocal_points[intersection]
+        proximity = proximity[intersection]
+        g_hkls = g_hkls[intersection]
+        return g_hkls, intersection_coordinates, intersection_indices, proximity
+
+    def sample_reciprocal_lattice(self, lattice, reciprocal_radius):
+        """Crystallographic reciprocal lattice points g-vector magnitudes.
+
+        Parameters
+        ----------
+        lattice : :class:`pymatgen.core.lattice.Lattice`
+            The *real* crystallographic lattice.
+        reciprocal_radius : float
+            The radius of reciprocal space from which to sample the reciprocal
+            lattice, in Angstroms.
+
+        Returns
+        -------
+        reciprocal_points : :class:`numpy.ndarray`
+            The miller indices of the sampled reciprocal space points.
+        g_hkls : :class:`numpy.ndarray`
+            ???
+        cartesian_coordinates : :class:`numpy.ndarray`
+            The reciprocal space coordinates of the sampled points.
+
+        """
+        reciprocal_lattice = lattice.reciprocal_lattice_crystallographic
+        reciprocal_points = \
+            reciprocal_lattice.get_points_in_sphere([[0, 0, 0]],
+                                                    [0, 0, 0],
+                                                    reciprocal_radius,
+                                                    zip_results=False)[0]
+        g_hkls = \
+            reciprocal_lattice.get_points_in_sphere([[0, 0, 0]],
+                                                    [0, 0, 0],
+                                                    reciprocal_radius,
+                                                    zip_results=False)[1]
+        cartesian_coordinates = \
+            reciprocal_lattice.get_cartesian_coords(reciprocal_points)
+        return reciprocal_points, g_hkls, cartesian_coordinates
 
 
 class DiffractionSimulation:

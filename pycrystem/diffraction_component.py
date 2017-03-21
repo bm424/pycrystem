@@ -81,12 +81,6 @@ class ElectronDiffractionForwardModel(Component):
     def simulate(self):
         """Calculates the Electron Diffraction data for a structure.
 
-        Parameters
-        ----------
-        structure : Structure
-            The structure for which to derive the diffraction pattern. Note that
-            the structure must be rotated to the appropriate orientation.
-
         Returns
         -------
         DiffractionSimulation
