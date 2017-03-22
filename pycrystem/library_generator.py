@@ -23,18 +23,15 @@ from __future__ import division
 from math import radians
 
 import numpy as np
-from hyperspy.signals import BaseSignal
 from pymatgen.transformations.standard_transformations \
     import RotationTransformation
-from scipy.interpolate import griddata
 from tqdm import tqdm
 from transforms3d.euler import euler2axangle
-from scipy.constants import pi
 
 
 class DiffractionLibraryGenerator(object):
-    """
-    Computes a series of electron diffraction patterns using a kinematical model
+    """Computes a series of kinematical electron diffraction patterns
+
     """
 
     def __init__(self, electron_diffraction_calculator):
@@ -53,8 +50,7 @@ class DiffractionLibraryGenerator(object):
                                 calibration,
                                 reciprocal_radius,
                                 representation='euler'):
-        """Calculates a list of diffraction data for a library of crystal
-        structures and orientations.
+        """Diffraction simulations for crystal structures and orientations.
 
         Each structure in the structure library is rotated to each associated
         orientation and the diffraction pattern is calculated each time.
@@ -68,10 +64,10 @@ class DiffractionLibraryGenerator(object):
             library, in reciprocal Angstroms per pixel.
         reciprocal_radius : float
             The maximum g-vector magnitude to be accepted.
-        representation : 'euler' or 'axis-angle'
+        representation : 'euler' or 'axis-angle', optional
             The representation in which the orientations are provided.
-            If 'euler' the zxz convention is taken and values are in radians, if
-            'axis-angle' the rotational angle is in degrees.
+            If 'euler' (default) the zxz convention is taken and values are in
+            radians, if 'axis-angle' the rotational angle is in degrees.
 
         Returns
         -------
@@ -115,7 +111,7 @@ class DiffractionLibraryGenerator(object):
         orientations_axangle = np.zeros((len(orientations), 4))
         if representation is 'euler':
             for o_1, o_2 in zip(orientations, orientations_axangle):
-                o_2[:3], o_2[3] = euler2axangle(*o_1, 'rzxz')
+                o_2[:3], o_2[3] = euler2axangle(o_1[0], o_1[1], o_1[2], 'rzxz')
         elif representation is 'axis-angle':
             orientations_axangle = orientations
         else:
@@ -125,8 +121,11 @@ class DiffractionLibraryGenerator(object):
 
 
 class DiffractionLibrary(dict):
-    """Maps crystal structure (phase) and orientation (Euler angles or
+    """A library of diffraction patterns for a given system.
+
+    Maps crystal structure (phase) and orientation (Euler angles or
     axis-angle pair) to simulated diffraction data.
+
     """
 
     @property
@@ -169,13 +168,14 @@ class DiffractionLibrary(dict):
                 diffraction_pattern.offset = offset
 
     def plot(self):
-        """Plots the library interactively.
+        """Plots the libraries interactively.
+
         """
         from pycrystem.diffraction_signal import ElectronDiffraction
         sim_diff_dat = []
-        for key in self.keys():
-            for ori in self[key].keys():
-                dpi = self[key][ori].as_signal(128, 0.03, 1)
+        for library in self.libraries:
+            for ori in library.keys():
+                dpi = library[ori].as_signal(128, 0.03, 1)
                 sim_diff_dat.append(dpi.data)
         ppt_test = ElectronDiffraction(sim_diff_dat)
         ppt_test.plot()

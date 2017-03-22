@@ -21,7 +21,7 @@ from hyperspy.signals import Signal2D
 from hyperspy import roi
 import numpy as np
 from scipy.ndimage import variance
-from pycrystem.utils.expt_utils import *
+from pycrystem.utils.experimental import *
 
 """
 Signal class for Tensor Fields

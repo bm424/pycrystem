@@ -22,13 +22,15 @@
 from __future__ import division
 
 import numpy as np
+from scipy.interpolate import griddata
 from hyperspy.signals import BaseSignal
 from tqdm import tqdm
 
 from .utils import correlate
 from .utils.plot import plot_correlation_map
 
-class IndexationGenerator():
+
+class IndexationGenerator:
     """Generates an indexer for data using a number of methods.
     """
     def __init__(self, signal, library):
@@ -53,7 +55,8 @@ class IndexationGenerator():
 
         output_array = np.zeros(signal.axes_manager.navigation_shape,
                                 dtype=object)
-        for image, index in tqdm(zip(signal._iterate_signal(),
+        for image, index in tqdm(
+                zip(signal._iterate_signal(),
                 signal.axes_manager._array_indices_generator()),
                 disable=not show_progressbar,
                 total=signal.axes_manager.navigation_size):
@@ -61,7 +64,10 @@ class IndexationGenerator():
             for key in library.keys():
                 diff_lib = library[key]
                 correlations = dict()
-                for orientation, diffraction_pattern in tqdm(diff_lib.items(), disable=not show_progressbar, leave=False):
+                for orientation, diffraction_pattern in \
+                        tqdm(diff_lib.items(),
+                             disable=not show_progressbar,
+                             leave=False):
                     correlation = correlate(image, diffraction_pattern)
                     correlations[orientation] = correlation
                 phase_correlations[key] = Correlation(correlations)
@@ -122,13 +128,15 @@ class Correlation(dict):
         best_correlations = {}
         for angle in self:
             correlation = self[angle]
-            angle = tuple(np.array(angle)[axes,])
-            if angle in best_correlations and correlation < best_correlations[angle]:
+            angle = tuple(np.array(angle)[axes, ])
+            if angle in best_correlations \
+                    and correlation < best_correlations[angle]:
                 continue
             best_correlations[angle] = correlation
         return Correlation(best_correlations)
 
-    def as_signal(self, resolution=np.pi/180, interpolation_method='cubic', fill_value=0.):
+    def as_signal(self, resolution=np.pi/180, interpolation_method='cubic',
+                  fill_value=0.):
         """Returns the correlation as a hyperspy signal.
 
         Interpolates between angles where necessary to produce a consistent
@@ -141,6 +149,8 @@ class Correlation(dict):
         interpolation_method : 'nearest' | 'linear' | 'cubic'
             The method used for interpolation. See
             :func:`scipy.interpolate.griddata` for more details.
+        fill_value : float, optional
+            Values to fill outside of the interpolatable area.
 
         Returns
         -------

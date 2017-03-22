@@ -26,7 +26,7 @@ import numpy as np
 from hyperspy.components2d import Gaussian2D
 
 from pycrystem.diffraction_signal import ElectronDiffraction
-from pycrystem.utils.sim_utils import get_electron_wavelength,\
+from pycrystem.utils.simulation import get_electron_wavelength,\
     get_kinematical_intensities
 from pymatgen.util.plotting_utils import get_publication_quality_plot
 
@@ -80,8 +80,8 @@ class ElectronDiffractionGenerator(object):
         Parameters
         ----------
         structure : Structure
-            The structure for which to derive the diffraction pattern. Note that
-            the structure must be rotated to the appropriate orientation.
+            The structure for which to derive the diffraction pattern. Note
+            that the structure must be rotated to the appropriate orientation.
         reciprocal_radius : float
             The radius of reciprocal space from which to sample the reciprocal
             lattice, in Angstroms.
@@ -93,17 +93,17 @@ class ElectronDiffractionGenerator(object):
 
         """
         # Specify variables used in calculation
-        wavelength = self.wavelength
         max_excitation_error = self.max_excitation_error
         debye_waller_factors = self.debye_waller_factors
         lattice = structure.lattice
 
-        lattice_sampled = \
+        reciprocal_points, g_hkls, cartesian_coordinates = \
             self.sample_reciprocal_lattice(lattice, reciprocal_radius)
 
         g_hkls, intersection_coordinates, intersection_indices, proximity = \
-            self.ewald_sphere_intersection(*lattice_sampled)
-
+            self.ewald_sphere_intersection(reciprocal_points,
+                                           g_hkls,
+                                           cartesian_coordinates)
         # Calculate diffracted intensities based on a kinematical model.
         intensities = get_kinematical_intensities(structure,
                                                   intersection_indices,
@@ -162,7 +162,8 @@ class ElectronDiffractionGenerator(object):
         intersection_indices = reciprocal_points[intersection]
         proximity = proximity[intersection]
         g_hkls = g_hkls[intersection]
-        return g_hkls, intersection_coordinates, intersection_indices, proximity
+        return (g_hkls, intersection_coordinates, intersection_indices,
+                proximity)
 
     def sample_reciprocal_lattice(self, lattice, reciprocal_radius):
         """Crystallographic reciprocal lattice points g-vector magnitudes.
@@ -264,7 +265,6 @@ class DiffractionSimulation:
         else:
             return np.sum(self._coordinates == 0., axis=1) != 3
 
-
     @property
     def coordinates(self):
         return self._coordinates[self.direct_beam_mask]
@@ -314,7 +314,7 @@ class DiffractionSimulation:
 
         Parameters
         ----------
-        size : :obj:`tuple` of :obj:`int`
+        size : int
             (x, y) signal_shape for the signal to be simulated.
         sigma : float
             Standard deviation of the Gaussian function to be plotted.
@@ -328,7 +328,7 @@ class DiffractionSimulation:
         dp_dat = np.zeros(size)
         l = np.linspace(-max_r, max_r, size)
         x, y = np.meshgrid(l, l)
-        i=0
+        i = 0
         while i < len(self.intensities):
             cx = self.coordinates[i][0]
             cy = self.coordinates[i][1]
@@ -339,9 +339,9 @@ class DiffractionSimulation:
                            centre_x=cx,
                            centre_y=cy)
             dp_dat = dp_dat + g.function(x, y)
-            i=i+1
+            i += 1
 
         dp = ElectronDiffraction(dp_dat)
-        dp.set_calibration(max_r/size)
+        dp.set_calibration(max_r / size)
 
         return dp

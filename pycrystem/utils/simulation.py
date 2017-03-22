@@ -27,8 +27,9 @@ import numpy as np
 from scipy.constants import h, m_e, e, c, pi
 import json
 
-ASP_FILE = pkg_resources.resource_filename('pycrystem',
-                                           'data/atomic_scattering_params.json')
+ASP_FILE = pkg_resources.resource_filename(
+    'pycrystem', 'data/atomic_scattering_params.json'
+)
 
 with open(ASP_FILE) as f:
     ATOMIC_SCATTERING_PARAMS = json.load(f)
@@ -52,8 +53,8 @@ def get_electron_wavelength(accelerating_voltage):
 
     """
     E = accelerating_voltage*1e3
-    wavelength = h / math.sqrt(2 * m_e * e * E *\
-                               (1 + (e / (2 * m_e * c * c)) * E))*1e10
+    wavelength = h / math.sqrt(2 * m_e * e * E *
+                               (1 + (e / (2 * m_e * c * c)) * E)) * 1e10
     return wavelength
 
 

@@ -23,7 +23,7 @@ from hyperspy.signals import Signal2D, Signal1D
 from scipy.ndimage import variance
 
 from scipy.ndimage import variance
-from pycrystem.utils.expt_utils import *
+from pycrystem.utils.experimental import *
 from .library_generator import DiffractionLibrary
 from .indexation_generator import IndexationGenerator
 

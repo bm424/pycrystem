@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.interpolate import RectBivariateSpline
 
-import pycrystem.utils.strain_utils
+import pycrystem.utils.strain
 
 
 def correlate(image, pattern, include_direct_beam=False, sim_threshold=1e-5,
