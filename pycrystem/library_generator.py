@@ -20,6 +20,7 @@
 """
 
 from __future__ import division
+from math import radians
 
 import numpy as np
 from hyperspy.signals import BaseSignal
@@ -61,15 +62,12 @@ class DiffractionLibraryGenerator(object):
         Parameters
         ----------
         structure_library : dict
-            List of structures for which to derive the library.
-
+            Maps structure names to a tuple of a structure and an orientation.
         calibration : float
             The calibration of experimental data to be correlated with the
             library, in reciprocal Angstroms per pixel.
-
         reciprocal_radius : float
             The maximum g-vector magnitude to be accepted.
-
         representation : 'euler' or 'axis-angle'
             The representation in which the orientations are provided.
             If 'euler' the zxz convention is taken and values are in radians, if
@@ -87,37 +85,57 @@ class DiffractionLibraryGenerator(object):
         # The electron diffraction calculator to do simulations
         diffractor = self.electron_diffraction_calculator
         # Iterate through phases in library.
-        for key in structure_library.keys():
+        for structure_key in structure_library.keys():
             phase_diffraction_library = dict()
-            structure = structure_library[key][0]
-            orientations = structure_library[key][1]
+            structure = structure_library[structure_key][0]
+            orientations = structure_library[structure_key][1]
             # Iterate through orientations of each phase.
+
+            orientations = self.parse_axis_angle(orientations, representation)
+
             for orientation in tqdm(orientations, leave=False):
-                if representation=='axis-angle':
-                    axis = [orientation[0], orientation[1], orientation[2]]
-                    angle = orientation[3] / 180 * pi
-                if representation=='euler':
-                    axis, angle = euler2axangle(orientation[0], orientation[1],
-                                                orientation[2], 'rzxz')
+                axis = [orientation[0], orientation[1], orientation[2]]
+                angle = radians(orientation[3])
+
                 # Apply rotation to the structure
                 rotation = RotationTransformation(axis, angle,
                                                   angle_in_radians=True)
-                rotated_structure = rotation.apply_transformation(structure)
+                structure_rotated = rotation.apply_transformation(structure)
                 # Calculate electron diffraction for rotated structure
-                data = diffractor.calculate_ed_data(rotated_structure,
-                                                    reciprocal_radius)
+                simulation = diffractor.calculate_ed_data(structure_rotated,
+                                                          reciprocal_radius)
                 # Calibrate simulation
-                data.calibration = calibration
+                simulation.calibration = calibration
                 # Construct diffraction simulation library.
-                phase_diffraction_library[tuple(orientation)] = data
-            diffraction_library[key] = phase_diffraction_library
+                phase_diffraction_library[tuple(orientation)] = simulation
+            diffraction_library[structure_key] = phase_diffraction_library
         return diffraction_library
+
+    def parse_axis_angle(self, orientations, representation):
+        orientations_axangle = np.zeros((len(orientations), 4))
+        if representation is 'euler':
+            for o_1, o_2 in zip(orientations, orientations_axangle):
+                o_2[:3], o_2[3] = euler2axangle(*o_1, 'rzxz')
+        elif representation is 'axis-angle':
+            orientations_axangle = orientations
+        else:
+            raise ValueError("`representation` must be "
+                             "'euler' or 'axis-angle'")
+        return orientations_axangle
 
 
 class DiffractionLibrary(dict):
     """Maps crystal structure (phase) and orientation (Euler angles or
     axis-angle pair) to simulated diffraction data.
     """
+
+    @property
+    def structures(self):
+        return self.keys()
+
+    @property
+    def libraries(self):
+        return self.values()
 
     def set_calibration(self, calibration):
         """Sets the scale of every diffraction pattern simulation in the
@@ -130,9 +148,8 @@ class DiffractionLibrary(dict):
             reciprocal angstrom coordinates.
 
         """
-        for key in self.keys():
-            diff_lib = self[key]
-            for diffraction_pattern in diff_lib.values():
+        for structure_library in self.libraries:
+            for diffraction_pattern in structure_library.values():
                 diffraction_pattern.calibration = calibration
 
     def set_offset(self, offset):
@@ -147,9 +164,8 @@ class DiffractionLibrary(dict):
 
         """
         assert len(offset) == 2
-        for key in self.keys():
-            diff_lib = self[key]
-            for diffraction_pattern in diff_lib.values():
+        for structure_library in self.libraries:
+            for diffraction_pattern in structure_library.values():
                 diffraction_pattern.offset = offset
 
     def plot(self):
