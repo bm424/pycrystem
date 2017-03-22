@@ -5,15 +5,17 @@ from scipy.interpolate import RectBivariateSpline
 import pycrystem.utils.strain_utils
 
 
-def correlate(image, pattern, include_direct_beam=False, sim_threshold=1e-5, interpolate=False,
-              **kwargs):
+def correlate(image, pattern, include_direct_beam=False, sim_threshold=1e-5,
+              interpolate=False, **kwargs):
     """The correlation between a diffraction pattern and a simulation.
+
     Calculated using
-        .. math::
-            \frac{\sum_{j=1}^m P(x_j, y_j) T(x_j, y_j)}{\sqrt{\sum_{j=1}^m P^2(x_j, y_j)} \sqrt{\sum_{j=1}^m T^2(x_j, y_j)}}
+       .. math::
+          \\frac{\\sum_{j=1}^m P(x_j, y_j) T(x_j, y_j)}{\\sqrt{\\sum_{j=1}^m P^2(x_j, y_j)} \\sqrt{\\sum_{j=1}^m T^2(x_j, y_j)}}
+
     Parameters
     ----------
-    image : :class:`np.ndarray`
+    image : :class:`numpy.ndarray`
         A single electron diffraction signal. Should be appropriately scaled
         and centered.
     pattern : :class:`DiffractionSimulation`
@@ -24,14 +26,17 @@ def correlate(image, pattern, include_direct_beam=False, sim_threshold=1e-5, int
         If True, perform sub-pixel interpolation of the image.
     **kwargs
         Arguments to pass to scipy.interpolate.RectBivariateSpline
+
     Returns
     -------
     float
         The correlation coefficient.
+
     References
     ----------
-    E. F. Rauch and L. Dupuy, “Rapid Diffraction Patterns identification through
-        template matching,” vol. 50, no. 1, pp. 87–99, 2005.
+    E. F. Rauch and L. Dupuy, "Rapid Diffraction Patterns identification through
+        template matching," vol. 50, no. 1, pp. 87–99, 2005.
+
     """
     shape = image.shape
     half_shape = tuple(i // 2 for i in shape)
@@ -66,7 +71,7 @@ def correlate_component(image, pattern):
 
     Calculated using
         .. math::
-            \frac{\sum_{j=1}^m P(x_j, y_j) T(x_j, y_j)}{\sqrt{\sum_{j=1}^m P^2(x_j, y_j)} \sqrt{\sum_{j=1}^m T^2(x_j, y_j)}}
+            \\frac{\sum_{j=1}^m P(x_j, y_j) T(x_j, y_j)}{\\sqrt{\\sum_{j=1}^m P^2(x_j, y_j)} \\sqrt{\\sum_{j=1}^m T^2(x_j, y_j)}}
 
     Parameters
     ----------

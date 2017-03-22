@@ -31,7 +31,7 @@ from pycrystem.utils.sim_utils import get_electron_wavelength,\
 from pymatgen.util.plotting_utils import get_publication_quality_plot
 
 
-class ElectronDiffractionCalculator(object):
+class ElectronDiffractionGenerator(object):
     """Computes electron diffraction patterns for a crystal structure.
 
     1. Calculate reciprocal lattice of structure. Find all reciprocal points
@@ -43,8 +43,9 @@ class ElectronDiffractionCalculator(object):
 
     3. The intensity of each reflection is then given in the kinematic
        approximation as the modulus square of the structure factor.
-           .. math::
-                I_{hkl} = F_{hkl}F_{hkl}^*
+       .. math::
+          I_{hkl} = F_{hkl}F_{hkl}^*
+
 
     Parameters
     ----------
@@ -206,6 +207,8 @@ class DiffractionSimulation:
                  calibration=1., offset=(0., 0.), with_direct_beam=False):
         """Holds the result of a given diffraction pattern.
 
+        Parameters
+        ----------
         coordinates : array-like
             The x-y coordinates of points in reciprocal space.
         indices : array-like
