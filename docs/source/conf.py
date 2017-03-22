@@ -363,4 +363,5 @@ intersphinx_mapping = {
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/', None),
     'hyperspy': ('http://hyperspy.org/hyperspy-doc/current/', None),
+    'matplotlib': ('http://matplotlib.org', None),
 }

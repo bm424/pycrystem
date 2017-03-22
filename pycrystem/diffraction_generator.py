@@ -211,10 +211,8 @@ class DiffractionSimulation:
         indices : array-like
             The indices of the reciprocal lattice points that intersect the
             Ewald sphere.
-        proximity : array-like
-            The distance between the reciprocal lattice points that intersect
-            the Ewald sphere and the Ewald sphere itself in reciprocal
-            angstroms.
+        intensities : array-like
+            The intensities of each diffraction spot.
         calibration : {:obj:`float`, :obj:`tuple` of :obj:`float`}, optional
             The x- and y-scales of the pattern, with respect to the original
             reciprocal angstrom coordinates.
@@ -253,8 +251,8 @@ class DiffractionSimulation:
         elif len(calibration) == 2:
             self._calibration = calibration
         else:
-            raise ValueError("`calibration` must be a float, int, or length-2 tuple"
-                             "of floats or ints.")
+            raise ValueError("`calibration` must be a float, int, or length-2"
+                             "tuple of floats or ints.")
 
     @property
     def direct_beam_mask(self):
@@ -280,9 +278,14 @@ class DiffractionSimulation:
     def intensities(self, intensities):
         self._intensities = intensities
 
-
     def plot(self, ax=None):
         """Returns the diffraction data as a plot.
+
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            If supplied, the figure will be drawn on the specified axes. If
+            not, the current active axis will be used.
 
         Notes
         -----
@@ -302,14 +305,18 @@ class DiffractionSimulation:
         return ax
 
     def as_signal(self, size, sigma, max_r):
-        """Returns the diffraction data as an ElectronDiffraction signal with
-        Gaussian functions representing each diffracted peak.
+        """Returns the diffraction data as an ElectronDiffraction signal
+
+        Gaussian functions are used to represent each diffracted peak.
 
         Parameters
         ----------
-        shape : tuple
-            (x,y) signal_shape for the signal to be simulated.
-        sigma : sigma of the Gaussian function to be plotted.
+        size : :obj:`tuple` of :obj:`int`
+            (x, y) signal_shape for the signal to be simulated.
+        sigma : float
+            Standard deviation of the Gaussian function to be plotted.
+        max_r : float
+            Boundaries of the signal in reciprocal Angstroms.
 
         """
         # Plot a 2D Gaussian at each peak position.
