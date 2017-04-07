@@ -28,6 +28,7 @@ from tqdm import tqdm
 from .utils import correlate
 from .utils.plot import plot_correlation_map
 
+
 class IndexationGenerator():
     """Generates an indexer for data using a number of methods.
     """
@@ -53,6 +54,8 @@ class IndexationGenerator():
 
         output_array = np.zeros(signal.axes_manager.navigation_shape,
                                 dtype=object)
+        if len(output_array.shape) == 0:
+            output_array = np.zeros((1,), dtype=object)
         for image, index in tqdm(zip(signal._iterate_signal(),
                 signal.axes_manager._array_indices_generator()),
                 disable=not show_progressbar,
@@ -60,13 +63,19 @@ class IndexationGenerator():
             phase_correlations = Correlation()
             for key in library.keys():
                 diff_lib = library[key]
-                correlations = dict()
-                for orientation, diffraction_pattern in tqdm(diff_lib.items(), disable=not show_progressbar, leave=False):
-                    correlation = correlate(image, diffraction_pattern)
-                    correlations[orientation] = correlation
-                phase_correlations[key] = Correlation(correlations)
+                phase_correlations[key] = self.correlate_image(diff_lib, image, show_progressbar)
             output_array[index] = phase_correlations
         return output_array
+
+    @staticmethod
+    def correlate_image(diff_lib, image, show_progressbar):
+        correlations = dict()
+        for orientation, diffraction_pattern in tqdm(diff_lib.items(),
+                                                     disable=not show_progressbar,
+                                                     leave=False):
+            correlation = correlate(image, diffraction_pattern)
+            correlations[orientation] = correlation
+        return Correlation(correlations)
 
 
 class Correlation(dict):

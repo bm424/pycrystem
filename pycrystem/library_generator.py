@@ -111,6 +111,7 @@ class DiffractionLibraryGenerator(object):
                 # Construct diffraction simulation library.
                 phase_diffraction_library[tuple(orientation)] = data
             diffraction_library[key] = phase_diffraction_library
+        diffraction_library.reciprocal_radius = reciprocal_radius
         return diffraction_library
 
 
@@ -118,6 +119,7 @@ class DiffractionLibrary(dict):
     """Maps crystal structure (phase) and orientation (Euler angles or
     axis-angle pair) to simulated diffraction data.
     """
+    reciprocal_radius = 1.0
 
     def set_calibration(self, calibration):
         """Sets the scale of every diffraction pattern simulation in the
