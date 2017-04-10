@@ -45,21 +45,18 @@ def manual_orientation(
         plt.show()
 
     def solve(button):
-        if library is not None:
-            library.set_calibration(calibration_slider.value)
-            indexer = IndexationGenerator(data, library)
-            correlation = indexer.correlate(show_progressbar=False)[0]
-            key = list(correlation.keys())[0]
-            print(correlation[key].best[0])
-            (alpha_slider.value, beta_slider.value, gamma_slider.value) = correlation[key].best[0]
-        else:
-            raise ValueError("No library has been supplied!")
+        library.set_calibration(calibration_slider.value)
+        indexer = IndexationGenerator(data, library)
+        correlation = indexer.correlate(show_progressbar=False)[0]
+        key = list(correlation.keys())[0]
+        print(correlation[key].best[0])
+        (alpha_slider.value, beta_slider.value, gamma_slider.value) = correlation[key].best[0]
 
     def on_change(change):
         clear_output(wait=True)
         update(alpha_slider.value, beta_slider.value, gamma_slider.value, calibration_slider.value/100.)
 
-    auto_solve_button = Button(value=False, description="Solve")
+    auto_solve_button = Button(value=False, description="Solve", disabled=library is None)
     auto_solve_button.on_click(solve)
 
     alpha_slider = FloatSlider(0.0, min=-np.pi, max=np.pi, step=0.01, description='Alpha:', readout_format='.2f', width='75%')
