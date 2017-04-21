@@ -36,8 +36,8 @@ def correlate(image, pattern, include_direct_beam=False, sim_threshold=1e-5, int
     shape = image.shape
     half_shape = tuple(i // 2 for i in shape)
 
-    pixel_coordinates = pattern.calibrated_coordinates.astype(int)[
-        :, :2] + half_shape
+    pixel_coordinates = \
+        pattern.calibrated_coordinates.astype(int)[:, :2] + half_shape
     in_bounds = np.product((pixel_coordinates > 0) *
                            (pixel_coordinates < shape[0]), axis=1).astype(bool)
     pattern_intensities = pattern.intensities

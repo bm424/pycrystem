@@ -443,8 +443,8 @@ class ElectronDiffraction(LazySignal2D, Signal2D):
         #TODO: Add additional methods particularly based on taking radial
         #profiles and fitting a power law or appropriate curve.
         self.data = self.data / self.data.max()
-        self.map(regional_filter, h=h)
-        self.map(filters.rank.mean, selem=square(3))
+        self.map(regional_filter, h=h, ragged=False)
+        self.map(filters.rank.mean, selem=square(3), ragged=False)
         self.data = self.data / self.data.max()
 
     def get_data_movie_frames(self, image, indices, save_path):
